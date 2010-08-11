@@ -1,0 +1,7 @@
+#meerkat-wrap h1{color:#000;font-size: 3.8em;line-height:1em;padding: 0;margin: 0;text-align:center}
+a.close-meerkat{background-image:url("fancy_close.png");height:30px;position:absolute;right:-15px;top:-15px;width:30px;z-index:1103}
+#meerkat{background-color:#e0e1cb;border:1px solid #cdcec8;display:block;height:154px;margin:-154px -226px 0 0;opacity:1;position:absolute;right:50%;top:50%;width:453px;z-index:20}
+#meerkat-wrap{z-index:100}
+/*#meerkat-transparent{background-color:#000 !important;opacity:0.8;filter: alpha(opacity=80)}*/
+#meerkat-transparent{background-color:#000 !important;opacity:0.8;filter: alpha(opacity=80); height:100%; position:absolute; left:0; top:0; width:100%; z-index:10;}
+#notice{background-color:#e0e1cb;border:1px solid #cdcec8;height:60px;margin:0 auto;padding:5px}
