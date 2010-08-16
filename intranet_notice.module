@@ -6,102 +6,101 @@
 **/
 
 function intranet_notice_init() {
-  if(variable_get('intranet_notice_enabled', 0)) {
 
-    // Add required JS from module dir
-    $intranet_notice_path = drupal_get_path('module','intranet_notice');
-    drupal_add_js($intranet_notice_path . '/inc/DD_belatedPNG_0.0.8a-min.js','module','header');
-    drupal_add_js($intranet_notice_path . '/inc/jquery.meerkat.1.3.js','module','header');
+  // Add required JS from module dir
+  $intranet_notice_path = drupal_get_path('module','intranet_notice');
+  drupal_add_js($intranet_notice_path . '/inc/DD_belatedPNG_0.0.8a-min.js','module','header');
+  drupal_add_js($intranet_notice_path . '/inc/jquery.meerkat.1.3.js','module','header');
 
-    // Build jQuery based off user-selected options
-/*
-    $js = '
-        function bannerSlide() {
-            jQuery("#ie6-content-container").each(function() {
-                $(this).replaceWith(this.childNodes);
-                jQuery("html").css({"overflow-y":"auto"});
-            });
-            $("#notice").slideDown("slow");
-        };
-*/
-    $js = '
-      function bannerSlide() {
-          $("#notice").slideDown("slow");
-          $("#meerkat-transparent").remove();
-      };
+  // Get user-selected server variables
+  $server_url = variable_get("intranet_notice_server_url", "");
+  $json_element = 'json1.nodes[0].' . variable_get('intranet_notice_json_element', 'node_revisions_body');
 
-      function readCookie(name) {
-        var nameEQ = name + "=";
-        var ca = document.cookie.split(\';\');
-        for(var i=0;i < ca.length;i++) {
-          var c = ca[i];
-          while (c.charAt(0)===\' \') c = c.substring(1,c.length);
-          if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length,c.length);
-        }
-        return null;
+  // Build jQuery based off user-selected options
+  $js = '
+    var override = "' . variable_get("intranet_notice_override", 0) . '";
+    function bannerSlide() {
+        $("#notice").slideDown("slow");
+        $("#meerkat-transparent").remove();
+    };
+
+    function readCookie(name) {
+      var nameEQ = name + "=";
+      var ca = document.cookie.split(\';\');
+      for(var i=0;i < ca.length;i++) {
+        var c = ca[i];
+        while (c.charAt(0)===\' \') c = c.substring(1,c.length);
+        if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length,c.length);
       }
-  
-      // Get user-selected server variables
-      $server_url = variable_get("intranet_notice_server_url", "");
-      $json_element = 'json.nodes[0].' . variable_get('intranet_notice_json_element', 'node_revisions_body');
+      return null;
+    }
 
-      $(document).ready(function() {
-        DD_belatedPNG.fix(".close-meerkat");
-        $("body").append("<div id=\"meerkat\" style=\"display:none\"></div>");
-        $.getJSON("' . $server_url . '", function(json) {
-          $("#meerkat").html(' . $json_element . '+ "<a class=\"close-meerkat\" style=\"cursor: pointer;\"></a>");
-          $("body").prepend("<div id=\"notice\" style=\"display:none\">" + ' . $json_element . ' + "</div>");
-  
-          var json_pass = new Array();
+    $(document).ready(function() {
+      DD_belatedPNG.fix(".close-meerkat");
+      $("body").append("<div id=\"meerkat\" style=\"display:none\"></div>");
 
-          if(variable_get('intranet_notice_override', 0)) {
-              json_pass["close"] = json.nodes[0]["node_data_field_close_field_close"];
-              json_pass["dontShowAgain"] = json.nodes[0]["node_data_field_close_field_dontshowagain"];
-              json_pass["cookieExpires"] = json.nodes[0]["node_data_field_close_field_cookieexpires"];
-              json_pass["position"] = json.nodes[0]["node_data_field_close_field_position"];
-              json_pass["animationOut"] = json.nodes[0]["node_data_field_close_field_animationout"];
-              json_pass["animationSpeed"] = json.nodes[0]["node_data_field_close_field_animationspeed"];
-              json_pass["height"] = json.nodes[0]["node_data_field_close_field_height"];
-              json_pass["background"] = json.nodes[0]["node_data_field_close_field_background"];
-          } else {
-              json_pass = json;
-          }
- 
-          $.each(json_pass, function(i, val) {
-            if (val == "*") {
-              json_pass[i] = "";
-            } else {
-              json_pass[i] = val;
-            }
-          });
-
-          $("#meerkat").meerkat({
-              close: json_pass[\'close\'],
-              dontShowAgain: json_pass[\'dontShowAgain\'],
-              cookieExpires: json_pass[\'cookieExpires\'],
-              position: json_pass[\'position\'],
-              animationOut: json_pass[\'animationOut\'],
-              animationSpeed: parseFloat(json_pass[\'animationSpeed\']),
-              height: json_pass[\'height\'],
-              background: json_pass[\'background\']
-          });
-
-          if(readCookie("meerkat") != "dontshow"){
-            $("' . $meerkat["close"] . '").click(function() {
-              $("#meerkat-transparent").fadeOut("slow");
-              setTimeout("bannerSlide()", ' . $meerkat["animationSpeed"] . ');
-            });
-          } else {
-            $("#notice").show();
-          }
-        });
+      $.getJSON("' . $server_url . '", function(json1) {
+        second_json(json1);
       });
-    ';
+    });
 
-    // Add JS/CSS to page
-    drupal_add_js($js,'inline','header');
-    drupal_add_css($intranet_notice_path . '/inc/alerts.css');
-  }
+    function second_json(json1) {
+      $.getJSON("intranet_notice/json", function(json2) {
+        process_data(json1, json2);
+      });
+    }
+
+    function process_data(json1, json2) {
+      $("#meerkat").html(' . $json_element . ' + "<a class=\"close-meerkat\" style=\"cursor: pointer;\"></a>");
+      $("body").prepend("<div id=\"notice\" style=\"display:none\">" + ' . $json_element . ' + "</div>");
+ 
+      var json_pass = new Array();
+      json_pass["close"] = json1.nodes[0]["node_data_field_close_field_close"];
+      json_pass["dontShowAgain"] = json1.nodes[0]["node_data_field_close_field_dontshowagain"];
+      json_pass["cookieExpires"] = json1.nodes[0]["node_data_field_close_field_cookieexpires"];
+      json_pass["position"] = json1.nodes[0]["node_data_field_close_field_position"];
+      json_pass["animationOut"] = json1.nodes[0]["node_data_field_close_field_animationout"];
+      json_pass["animationSpeed"] = json1.nodes[0]["node_data_field_close_field_animationspeed"];
+      json_pass["height"] = json1.nodes[0]["node_data_field_close_field_height"];
+      json_pass["background"] = json1.nodes[0]["node_data_field_close_field_background"];
+
+      if(override) {
+          json_pass = json2;
+      }
+ 
+      $.each(json_pass, function(i, val) {
+        if (val == "*") {
+          json_pass[i] = "";
+        } else {
+          json_pass[i] = val;
+        }
+      });
+ 
+      $("#meerkat").meerkat({
+          close: json_pass[\'close\'],
+          dontShowAgain: json_pass[\'dontShowAgain\'],
+          cookieExpires: json_pass[\'cookieExpires\'],
+          position: json_pass[\'position\'],
+          animationOut: json_pass[\'animationOut\'],
+          animationSpeed: parseFloat(json_pass[\'animationSpeed\']),
+          height: json_pass[\'height\'],
+          background: json_pass[\'background\']
+      });
+ 
+      if(readCookie("meerkat") != "dontshow"){
+        $("' . $meerkat["close"] . '").click(function() {
+          $("#meerkat-transparent").fadeOut("slow");
+          setTimeout("bannerSlide()", json_pass["animationSpeed"]);
+        });
+      } else {
+        $("#notice").show();
+      }
+    }
+  ';
+
+  // Add JS/CSS to page
+  drupal_add_js($js,'inline','header');
+  drupal_add_css($intranet_notice_path . '/inc/alerts.css');
 }
 
 function intranet_notice_perm() {
